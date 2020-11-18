@@ -1,6 +1,6 @@
-9613dd4e270893e9f84551072b16a72a *DESCRIPTION
-f51f44b87928ba3a63ae456f40459a77 *NAMESPACE
-227712580609eb369afce0c89e530156 *R/AAAA.R
+56dcacb642e8220f8fd43925d0965c1e *DESCRIPTION
+f2b5819b9f63727bd75501437bdd9a1e *NAMESPACE
+a918a3b8eb4555aafa751669caa3d4ad *R/AAAA.R
 cc288cef0d97cd399442de060ebbb55a *R/TT2tri.R
 d060b63134b814fcc9a1940f858d8e74 *R/ZZZ.R
 4ef2c50aa1d59e0a8d25fcf7b20c9cfa *R/buffer.dist.R
@@ -15,7 +15,8 @@ df48a5e715814f37d5d0074c2291441c *R/spc.R
 552d0289609e396a37af99ddaa3bed2a *R/spmultinom.R
 d5575f9fda86dd848f1280cf92a35983 *R/spsample.prob.R
 02046b287a986196e7ae9a0c6e8a58f3 *R/tile.R
-44bf7d840e5595aed0f78f778a459dd9 *R/train.spLearner.R
+b6581a009639ae4e724ab87f58e58501 *R/train.spLearner.R
+59d892fb364f031c8a8c3a0b33ce87c1 *R/tune.spLearner.R
 f98597b8213f99bcef422e4d0e0bf8b6 *data/USDA.TT.im.rda
 7439f3fbd56c07452bb22abff1416de2 *data/edgeroi.rda
 a44b6bc2bb25706725ba022c879854ce *data/landgis.tables.rda
@@ -48,5 +49,6 @@ a06b39eb6ea67537c44c835de62351db *man/spfkm.Rd
 6bbb0e8fb7d8709738aab7fe55e44208 *man/spmultinom.Rd
 caa65616708217c9b014d9f9d7dbdcbd *man/spsample.prob.Rd
 62a44318804350c048b8bf8cdce76c7c *man/tile-methods.Rd
-a9c2e4e7d6a90c64a189bb811ac356be *man/train.spLearner-methods.Rd
-5a4ae563e057393ed0a38ea6bce7038c *man/train.spLearner.matrix.Rd
+a8ac841cda5d84a1d9afbb4c9a79acc5 *man/train.spLearner-methods.Rd
+2a73d4e517c9b0e3827630fc101058bf *man/train.spLearner.matrix.Rd
+a9cbd6ec9efa999ba88e7aa61f4b73cf *man/tune.spLearner-methods.Rd
