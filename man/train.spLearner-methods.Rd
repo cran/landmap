@@ -79,10 +79,10 @@ used for Cross-validation.
 Automated spatial predictions and/or interpolation using Ensemble Machine Learning. Extends functionality of the \href{https://github.com/mlr-org/mlr}{mlr} package. Suitable for predicting numeric, binomial and factor-type variables.
 }
 \note{
-By default uses oblique coordinates (rotated coordinates) as described in \href{https://doi.org/10.5194/soil-6-269-2020}{Moller et al. (2020)} to account for geographical distribution of values.
+By default uses oblique coordinates (rotated coordinates) as described in Moller et al. (2020; \doi{10.5194/soil-6-269-2020}) to account for geographical distribution of values.
 Buffer geographical distances can be added by setting \code{buffer.dist=TRUE}.
 Using either oblique coordinates and/or buffer distances is not recommended for point data set with distinct spatial clustering.
-Effects of adding geographical distances into modeling are explained in detail in \href{https://doi.org/10.7717/peerj.5518}{Hengl et al. (2018)}.
+Effects of adding geographical distances into modeling are explained in detail in Hengl et al. (2018; \doi{10.7717/peerj.5518}).
 Default learners used for regression are: \code{c("regr.ranger", "regr.ksvm", "regr.nnet", "regr.cvglmnet")}.
 Default learners used for classification / binomial variables are: \code{c("classif.ranger", "classif.svm", "classif.multinom")}, with \code{predict.type="prob"}.
 When using \code{method = "stack.cv"} each training and prediction round could produce somewhat different results due to randomization of CV.
@@ -93,7 +93,6 @@ library(mlr)
 library(rgdal)
 library(geoR)
 library(plotKML)
-library(xgboost)
 library(kernlab)
 library(ranger)
 library(glmnet)
@@ -101,7 +100,7 @@ library(boot)
 library(raster)
 demo(meuse, echo=FALSE)
 ## Regression:
-sl = c("regr.ranger", "regr.nnet", "regr.ksvm")
+sl = c("regr.ranger", "regr.nnet", "regr.glm")
 m <- train.spLearner(meuse["lead"], covariates=meuse.grid[,c("dist","ffreq")],
       lambda=0, parallel=FALSE, SL.library=sl)
 summary(m@spModel$learner.model$super.model$learner.model)
@@ -114,6 +113,7 @@ plot(raster(meuse.y$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
 
 library(parallelMap)
 library(deepnet)
+library(xgboost)
 ## Regression with default settings:
 m <- train.spLearner(meuse["zinc"], covariates=meuse.grid[,c("dist","ffreq")],
         parallel=FALSE, lambda = 0)
@@ -187,6 +187,13 @@ plot(stack(TAXGRSC$pred[grep("prob.", names(TAXGRSC$pred))]),
 plot(stack(TAXGRSC$pred[grep("error.", names(TAXGRSC$pred))]),
     col=SAGA_pal[["SG_COLORS_YELLOW_BLUE"]], zlim=c(0,0.45))
 dev.off()
+}
+}
+\references{
+\itemize{
+  \item Moller, A. B., Beucher, A. M., Pouladi, N., and Greve, M. H. (2020). Oblique geographic coordinates as covariates for digital soil mapping. SOIL, 6, 269–289. \doi{10.5194/soil-6-269-2020}
+  \item Hengl, T., Nussbaum, M., Wright, M. N., Heuvelink, G. B., and Graler, B. (2018) Random Forest as a generic framework for predictive modeling of spatial and spatio-temporal variables. PeerJ 6:e5518. \doi{10.7717/peerj.5518}
+  \item Meinshausen, N. (2006). \href{https://jmlr.org/papers/v7/meinshausen06a.html}{Quantile regression forests}. Journal of Machine Learning Research, 7(Jun), 983–999. \url{https://jmlr.org/papers/v7/meinshausen06a.html}
 }
 }
 \author{

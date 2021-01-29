@@ -1,6 +1,6 @@
 Package: landmap
 Title: Automated Spatial Prediction using Ensemble Machine Learning
-Version: 0.0.6
+Version: 0.0.7
 Authors@R: person("Tomislav", "Hengl", email = "tom.hengl@opengeohub.org", role = c("aut", "cre"))
 Description: Functions and tools for spatial interpolation and/or prediction of environmental variables (points to grids) 
    based on using Ensemble Machine Learning with geographical distances. Package also provides access to Global 
@@ -21,8 +21,8 @@ RoxygenNote: 7.1.1
 SystemRequirements: C++11, GDAL (>= 2.0.1), GEOS (>= 3.4.0), PROJ (>=
         4.8.0)
 NeedsCompilation: no
-Packaged: 2020-11-18 12:16:42 UTC; tomislav
+Packaged: 2021-01-29 11:57:00 UTC; tomislav
 Author: Tomislav Hengl [aut, cre]
 Maintainer: Tomislav Hengl <tom.hengl@opengeohub.org>
 Repository: CRAN
-Date/Publication: 2020-11-18 23:20:14 UTC
+Date/Publication: 2021-01-29 16:00:06 UTC
