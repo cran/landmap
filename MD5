@@ -1,4 +1,4 @@
-17077cb28179710626b7804cb7635dbc *DESCRIPTION
+5fc4efab0c13eefb54ea4c589fc47c29 *DESCRIPTION
 b103174f911a79d0139798e338074c2c *NAMESPACE
 5e9bc2dd0367dcaae48b5ef16954a6d2 *R/AAAA.R
 cc288cef0d97cd399442de060ebbb55a *R/TT2tri.R
@@ -13,11 +13,11 @@ a1d2265244b1dade88569028edb258e4 *R/makeTiles.R
 270f82c7ef55250ca1e4d8b3fcd31ca2 *R/spc.R
 7dd1ea74be8e5f9c0b6510fa5a6f2d3b *R/spfkm.R
 552d0289609e396a37af99ddaa3bed2a *R/spmultinom.R
-b410a71b1bc236c3828a00ebac63f4f3 *R/spsample.prob.R
+5f69a84580310cb5159f81b910f88900 *R/spsample.prob.R
 02046b287a986196e7ae9a0c6e8a58f3 *R/tile.R
-020fc27211ac82c870a67d6c2f07f5cd *R/train.spLearner.R
+4be50de27d8f4f12c6e89baafa89c970 *R/train.spLearner.R
 59d892fb364f031c8a8c3a0b33ce87c1 *R/tune.spLearner.R
-50f22e5fd0c9ddfe0764e76ef6a6027e *build/partial.rdb
+4c1a4888ba28c842b34fd5b9a9b7779d *build/partial.rdb
 f98597b8213f99bcef422e4d0e0bf8b6 *data/USDA.TT.im.rda
 8cccc6d0205f5722e74d9616897cd8af *data/cookfarm.rda
 7439f3fbd56c07452bb22abff1416de2 *data/edgeroi.rda
@@ -34,7 +34,7 @@ ee0bb28fc959b9dbdbb0d66647584d41 *man/TT2tri.Rd
 fb8be074d64b223442db3d198d05313c *man/buffer.dist-methods.Rd
 775f69816f19548c3d7b6d2046537a76 *man/cookfarm.Rd
 2eb4c49b2777b738b9b33099698ccbaf *man/download.landgis.Rd
-e43d1b0a3544f5ac2248c122f0dbf25a *man/edgeroi.Rd
+43d1938c2cf890b308956b26729b6680 *man/edgeroi.Rd
 fa024e414dcf3c00fac4a36b9775357c *man/fit.vgmModel.Rd
 dce96fc922da5148c2c090391d3b206e *man/getSpatialTiles-ANY-method.Rd
 cd4d4f3319d5652b49a6d3446971848e *man/getSpatialTiles-methods.Rd
@@ -43,7 +43,7 @@ cc8d865f799c19c183fbbfd973bbed73 *man/landgis.tables.Rd
 2412dbf086ddc0d42a88879c88ce0cee *man/landmap.Rd
 f5f0da6732d2042b2eddc5ee71217372 *man/makeTiles.Rd
 5c069559d8f624b2f47cf9992a925541 *man/model.data.Rd
-b91363b9a04d134b3905fa1e5d6ddc88 *man/predict.spLearner.Rd
+e1d17320a414a9b275628d6a5976950a *man/predict.spLearner.Rd
 a3f9edfd66d3897550a9b9a262c31b92 *man/print.spLearner.Rd
 0bca229fdac50b812f4b28685d66a666 *man/sample.grid.Rd
 0db7d97453a092e6af474bf9cd84652a *man/search.landgis.Rd
@@ -55,6 +55,6 @@ f66eaff8b4f951c4c6e4ce1aac76f87b *man/spc.Rd
 6bbb0e8fb7d8709738aab7fe55e44208 *man/spmultinom.Rd
 f05aa3e923a2cced32b5160fbc4f799f *man/spsample.prob.Rd
 62a44318804350c048b8bf8cdce76c7c *man/tile-methods.Rd
-fa446095bd059a8802b378653bc753bb *man/train.spLearner-methods.Rd
+3abba05ba32d2b10ecf7d17edfdcbee0 *man/train.spLearner-methods.Rd
 2a73d4e517c9b0e3827630fc101058bf *man/train.spLearner.matrix.Rd
 a9cbd6ec9efa999ba88e7aa61f4b73cf *man/tune.spLearner-methods.Rd

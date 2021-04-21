@@ -127,7 +127,7 @@ train.spLearner.matrix <- function(observations, formulaString, covariates, SL.l
   suppressWarnings( m <- mlr::train(init.m, tsk) )
   if(quantreg ==TRUE & !is.factor(Y) & m$learner.model$super.model$learner$id=="regr.lm"){
     message("Fitting a quantreg model using 'ranger::ranger'...", immediate. = TRUE)
-    quantregModel <- ranger::ranger(m$learner.model$super.model$learner.model$terms, m$learner.model$super.model$learner.model$model, num.trees=85, importance="impurity", quantreg=TRUE)
+    quantregModel <- ranger::ranger(m$learner.model$super.model$learner.model$terms, m$learner.model$super.model$learner.model$model, num.trees=85, importance="impurity", quantreg=TRUE, keep.inbag = TRUE)
   } else {
     quantregModel = NULL
   }
@@ -160,12 +160,14 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' @param cov.model Covariance model for variogram fitting,
 #' @param subsample For large datasets consider random subsetting training data,
 #' @param parallel logical, Initiate parallel processing,
-#' @param buffer.dist Specify whether to use buffer distances to points as covariates,
 #' @param oblique.coords Specify whether to use oblique coordinates as covariates,
+#' @param nearest Specify whether to use nearest values and distances i.e. the method of Sekulic et al. (2020),
+#' @param buffer.dist Specify whether to use buffer distances to points as covariates,
 #' @param theta.list List of angles (in radians) used to derive oblique coordinates,
 #' @param spc specifies whether to apply principal components transformation.
 #' @param id Id column name to control clusters of data,
 #' @param weights Optional weights (per row) that learners will use to account for variable data quality,
+#' @param n.obs Number of nearest observations to be found in \code{meteo::near.obs} (by default 10),
 #' @param ... other arguments that can be passed on to \code{mlr::makeStackedLearner},
 #'
 #' @importClassesFrom sp SpatialPixelsDataFrame SpatialPointsDataFrame
@@ -176,19 +178,23 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' @author \href{https://opengeohub.org/people/tom-hengl}{Tom Hengl}
 #'
 #' @note By default uses oblique coordinates (rotated coordinates) as described in Moller et al. (2020; \doi{10.5194/soil-6-269-2020}) to account for geographical distribution of values.
+#' By setting the \code{nearest = TRUE}, distances to nearest observations and values of nearest neighbors will be used (see: Sekulic et al, 2020; \doi{10.3390/rs12101687}). This method closely resembles geostatistical interpolators such as kriging.
 #' Buffer geographical distances can be added by setting \code{buffer.dist=TRUE}.
 #' Using either oblique coordinates and/or buffer distances is not recommended for point data set with distinct spatial clustering.
-#' Effects of adding geographical distances into modeling are explained in detail in Hengl et al. (2018; \doi{10.7717/peerj.5518}).
+#' Effects of adding geographical distances into modeling are explained in detail in Hengl et al. (2018; \doi{10.7717/peerj.5518}) and Sekulic et al. (2020; \doi{10.3390/rs12101687}).
 #' Default learners used for regression are: \code{c("regr.ranger", "regr.ksvm", "regr.nnet", "regr.cvglmnet")}.
 #' Default learners used for classification / binomial variables are: \code{c("classif.ranger", "classif.svm", "classif.multinom")}, with \code{predict.type="prob"}.
 #' When using \code{method = "stack.cv"} each training and prediction round could produce somewhat different results due to randomization of CV.
-#' Prediction errors are derived by default using quantreg (Quantile Regression) option in the ranger package (\href{https://jmlr.org/papers/v7/meinshausen06a.html}{Meinshausen, 2006}).
+#' Prediction errors are derived by default using the \code{forestError} package method described in Lu & Hardin (2021).
+#' Optionally, the quantreg (Quantile Regression) option from the ranger package (\href{https://jmlr.org/papers/v7/meinshausen06a.html}{Meinshausen, 2006}) can also be used.
 #'
 #' @references
 #' \itemize{
 #'   \item Moller, A. B., Beucher, A. M., Pouladi, N., and Greve, M. H. (2020). Oblique geographic coordinates as covariates for digital soil mapping. SOIL, 6, 269–289. \doi{10.5194/soil-6-269-2020}
 #'   \item Hengl, T., Nussbaum, M., Wright, M. N., Heuvelink, G. B., and Graler, B. (2018) Random Forest as a generic framework for predictive modeling of spatial and spatio-temporal variables. PeerJ 6:e5518. \doi{10.7717/peerj.5518}
+#'   \item Lu, B., & Hardin, J. (2021). A unified framework for random forest prediction error estimation. Journal of Machine Learning Research, 22(8), 1–41. \url{https://jmlr.org/papers/v22/18-558.html}
 #'   \item Meinshausen, N. (2006). \href{https://jmlr.org/papers/v7/meinshausen06a.html}{Quantile regression forests}. Journal of Machine Learning Research, 7(Jun), 983–999. \url{https://jmlr.org/papers/v7/meinshausen06a.html}
+#'   \item Sekulic, A., Kilibarda, M., Heuvelink, G. B., Nikolic, M. & Bajat, B. (2020). Random Forest Spatial Interpolation. Remote. Sens. 12, 1687, \doi{10.3390/rs12101687}
 #' }
 #'
 #' @examples
@@ -201,6 +207,7 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' library(glmnet)
 #' library(boot)
 #' library(raster)
+#' library(forestError)
 #' demo(meuse, echo=FALSE)
 #' ## Regression:
 #' sl = c("regr.ranger", "regr.nnet", "regr.glm")
@@ -223,11 +230,34 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' ## Ensemble model (meta-learner):
 #' summary(m@spModel$learner.model$super.model$learner.model)
 #' meuse.y <- predict(m)
+#' ## Plot of predictions and prediction error (RMSPE)
 #' op <- par(mfrow=c(1,2), oma=c(0,0,0,1), mar=c(0,0,4,3))
 #' plot(raster(meuse.y$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
 #'    main="Predictions spLearner", axes=FALSE, box=FALSE)
 #' points(meuse, pch="+")
 #' plot(raster(meuse.y$pred["model.error"]), col=rev(bpy.colors()),
+#'    main="Prediction errors", axes=FALSE, box=FALSE)
+#' points(meuse, pch="+")
+#' par(op)
+#' dev.off()
+#' ## Plot of prediction intervals:
+#' pts = list("sp.points", meuse, pch = "+", col="black")
+#' spplot(meuse.y$pred[,c("q.lwr","q.upr")], col.regions=R_pal[["rainbow_75"]][4:20],
+#'    sp.layout = list(pts),
+#'    main="Prediction intervals (alpha = 0.318)")
+#' dev.off()
+#'
+#' ## Method from https://doi.org/10.3390/rs12101687
+#' library(meteo)
+#' mN <- train.spLearner(meuse["zinc"], covariates=meuse.grid[,c("dist","ffreq")],
+#'         parallel=FALSE, lambda = 0, nearest=TRUE)
+#' meuse.N <- predict(mN)
+#' ## Plot of predictions and prediction error (RMSPE)
+#' op <- par(mfrow=c(1,2), oma=c(0,0,0,1), mar=c(0,0,4,3))
+#' plot(raster(meuse.N$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
+#'    main="Predictions spLearner meteo::near.obs", axes=FALSE, box=FALSE)
+#' points(meuse, pch="+")
+#' plot(raster(meuse.N$pred["model.error"]), col=rev(bpy.colors()),
 #'    main="Prediction errors", axes=FALSE, box=FALSE)
 #' points(meuse, pch="+")
 #' par(op)
@@ -246,9 +276,10 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' ## SIC1997
 #' data("sic1997")
 #' X <- sic1997$swiss1km[c("CHELSA_rainfall","DEM")]
-#' mR <- train.spLearner(sic1997$daily.rainfall, covariates=X, lambda=1, parallel=FALSE)
+#' mR <- train.spLearner(sic1997$daily.rainfall, covariates=X, lambda=1,
+#'          nearest = TRUE, parallel=FALSE)
 #' summary(mR@spModel$learner.model$super.model$learner.model)
-#' rainfall1km <- predict(mR)
+#' rainfall1km <- predict(mR, what="mspe")
 #' op <- par(mfrow=c(1,2), oma=c(0,0,0,1), mar=c(0,0,4,3))
 #' plot(raster(rainfall1km$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
 #'     main="Predictions spLearner", axes=FALSE, box=FALSE)
@@ -257,6 +288,7 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #'     main="Prediction errors", axes=FALSE, box=FALSE)
 #' points(sic1997$daily.rainfall, pch="+")
 #' par(op)
+#' dev.off()
 #'
 #' ## Ebergotzen data set
 #' data(eberg_grid)
@@ -293,7 +325,7 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' }
 #' @export
 #' @docType methods
-setMethod("train.spLearner", signature(observations = "SpatialPointsDataFrame", formulaString = "ANY", covariates = "SpatialPixelsDataFrame"), function(observations, formulaString, covariates, SL.library, family = stats::gaussian(), method = "stack.cv", predict.type, super.learner = "regr.lm", subsets = 5, lambda = 0.5, cov.model = "exponential", subsample = 10000, parallel = "multicore", buffer.dist = FALSE, oblique.coords = TRUE, theta.list=seq(0, 180, length.out = 14)*pi/180, spc = TRUE, id = NULL, weights = NULL, ...){
+setMethod("train.spLearner", signature(observations = "SpatialPointsDataFrame", formulaString = "ANY", covariates = "SpatialPixelsDataFrame"), function(observations, formulaString, covariates, SL.library, family = stats::gaussian(), method = "stack.cv", predict.type, super.learner = "regr.lm", subsets = 5, lambda = 0.5, cov.model = "exponential", subsample = 10000, parallel = "multicore", oblique.coords = TRUE, nearest = FALSE, buffer.dist = FALSE, theta.list=seq(0, 180, length.out = 14)*pi/180, spc = TRUE, id = NULL, weights = NULL, n.obs = 10, ...){
   if(missing(formulaString)){
     tv <- names(observations)[1]
     observations <- observations[!is.na(observations@data[,tv]),]
@@ -314,6 +346,13 @@ setMethod("train.spLearner", signature(observations = "SpatialPointsDataFrame", 
         ## remove last PC as this usually only carries noise?
         covariates <- covariates[-ncol(covariates)]
       }
+    }
+    if(nearest==TRUE){
+      message("Deriving nearest observations using meteo::near.obs...", immediate. = TRUE)
+      nearest_obs <- meteo::near.obs(locations = covariates, observations = observations[tv], zcol = tv, n.obs = n.obs, rm.dupl = TRUE)
+      nearest_obs.dev <- meteo::near.obs(locations = observations[tv], observations = observations[tv], zcol = tv, n.obs = n.obs, rm.dupl = TRUE)
+      covariates <- sp::cbind.Spatial(covariates, sp::SpatialPixelsDataFrame(covariates@coords, nearest_obs, proj4string = sp::CRS(sp::proj4string(covariates))))
+      oblique.coords <- FALSE; buffer.dist <- FALSE
     }
     if(buffer.dist==TRUE){
       message("Deriving buffer distances to points...", immediate. = TRUE)
@@ -348,13 +387,22 @@ setMethod("train.spLearner", signature(observations = "SpatialPointsDataFrame", 
     }
   }
   ov <- model.data(observations, formulaString, covariates)
+  if(nearest==TRUE){
+    ## replace values
+    ov[,names(nearest_obs.dev)] <- nearest_obs.dev
+  }
   r.sel <- stats::complete.cases(ov[,all.vars(formulaString)])
   n.r.sel <- sum(r.sel)
   if(!n.r.sel==nrow(observations)){
     message(paste0("Subsetting observations to ", round(n.r.sel/nrow(observations), 2)*100, "% complete cases..."), immediate. = TRUE)
   }
-  m <- train.spLearner.matrix(observations = ov, formulaString = formulaString, covariates = covariates, SL.library = SL.library, family = family, subsets = subsets, lambda = lambda, cov.model = cov.model, subsample = subsample, parallel = parallel, id=id, weights=weights, predict.type = predict.type, ...)
- return(m)
+  if(nearest==TRUE){
+    ## skip variogram modeling
+    m <- train.spLearner.matrix(observations = ov, formulaString = formulaString, covariates = covariates, SL.library = SL.library, family = family, subsets = subsets, lambda = lambda, cov.model = "nugget", subsample = subsample, parallel = parallel, id=id, weights=weights, predict.type = predict.type, ...)
+  } else {
+    m <- train.spLearner.matrix(observations = ov, formulaString = formulaString, covariates = covariates, SL.library = SL.library, family = family, subsets = subsets, lambda = lambda, cov.model = cov.model, subsample = subsample, parallel = parallel, id=id, weights=weights, predict.type = predict.type, ...)
+  }
+  return(m)
 })
 
 #' Overlay points and grids and prepare regression matrix
@@ -433,13 +481,15 @@ model.data <- function(observations, formulaString, covariates, dimensions=c("2D
 #' @param error.type Specify how should be the prediction error be derived.
 #' @param t.prob Threshold probability for significant learners; only applyies for meta-learners based on lm model.
 #' @param w optional weights vector.
-#' @param quantiles list of quantiles for quantreg forest (maximum lower and upper quantile).
+#' @param quantiles Lower and upper quantiles for quantreg forest (0.159 and 0.841 for 1 standard deviation).
+#' @param n.cores Number of cores to use (for parallel computation in ranger).
+#' @param what A vector of characters indicating what estimates are desired for the quantForestError.
 #' @param ... optional parameters.
 #'
 #' @return Object of class \code{SpatialPixelsDataFrame} with predictions and model error.
 #' @method predict spLearner
 #' @export
-"predict.spLearner" <- function(object, predictionLocations, model.error=TRUE, error.type=c("quantreg", "weighted.sd", "interval")[1], t.prob=1/3, w, quantiles = c((1-.682)/2, 1-(1-.682)/2), ...){
+"predict.spLearner" <- function(object, predictionLocations, model.error=TRUE, error.type=c("forestError", "quantreg", "weighted.sd", "interval")[1], t.prob=1/3, w, quantiles = c((1-.682)/2, 1-(1-.682)/2), n.cores = parallel::detectCores(), what = c("mspe", "bias", "interval"), ...){
   if(any(object@spModel$task.desc$type=="classif")){
     error.type <- "weighted.sd"
   }
@@ -451,6 +501,7 @@ model.data <- function(observations, formulaString, covariates, dimensions=c("2D
     if(model.error==TRUE){
       message("Predicting values using 'getStackedBaseLearnerPredictions'...", immediate. = TRUE)
       out.c <- as.matrix(as.data.frame(mlr::getStackedBaseLearnerPredictions(object@spModel, newdata=predictionLocations@data[,object@spModel$features])))
+      ## Classification:
       if(any(object@spModel$task.desc$type=="classif")){
         lvs <- object@spModel$task.desc$class.levels
         ## estimate weights:
@@ -472,6 +523,7 @@ model.data <- function(observations, formulaString, covariates, dimensions=c("2D
           }
         }
         pred <- sp::SpatialPixelsDataFrame(predictionLocations@coords, data=cbind(out$data, data.frame(pred.prob)), grid = predictionLocations@grid, proj4string = predictionLocations@proj4string)
+      ## Regression:
       } else {
         pred <- sp::SpatialPixelsDataFrame(predictionLocations@coords, data=out$data, grid=predictionLocations@grid, proj4string=predictionLocations@proj4string)
         if(error.type=="interval" & object@spModel$learner.model$super.model$learner$id=="regr.lm"){
@@ -481,12 +533,26 @@ model.data <- function(observations, formulaString, covariates, dimensions=c("2D
           ## assumes normal distribution
           pred$model.error <- (pred.int[,"upr"]-pred.int[,"lwr"])/2
         }
-        if(error.type=="quantreg" & object@spModel$learner.model$super.model$learner$id=="regr.lm"){
-          message("Deriving model errors using ranger package 'quantreg' option...", immediate. = TRUE)
-          pred.q = predict(object@quantregModel, as.data.frame(out.c), type="quantiles", quantiles=quantiles)
-          pred$model.error <- (pred.q$predictions[,2]-pred.q$predictions[,1])/2
-          pred@data[,"q.lwr"] <- pred.q$predictions[,1]
-          pred@data[,"q.upr"] <- pred.q$predictions[,2]
+        if((error.type=="quantreg" | error.type=="forestError") & object@spModel$learner.model$super.model$learner$id=="regr.lm"){
+          if(error.type=="forestError"){
+            message("Deriving model errors using forestError package...", immediate. = TRUE)
+            m.train = object@spModel$learner.model$super.model$learner.model$model
+            m.terms = all.vars(object@spModel$learner.model$super.model$learner.model$terms)
+            ## http://jmlr.org/papers/v22/18-558.html
+            pred.q = forestError::quantForestError(object@quantregModel, X.train=m.train[,m.terms[-1]], X.test=as.data.frame(out.c), Y.train=m.train[,m.terms[1]], what = what, alpha = (1-(quantiles[2]-quantiles[1])), n.cores = n.cores)
+            if(any(what %in% "mspe")){ pred$model.error <- sqrt(pred.q$mspe) }
+            if(any(what %in% "bias")){ pred$model.bias <- pred.q$bias }
+            if(any(what %in% "interval")){
+              pred@data[,"q.lwr"] <- pred.q[,grep("lower", names(pred.q))]
+              pred@data[,"q.upr"] <- pred.q[,grep("upper", names(pred.q))]
+            }
+          } else {
+            message("Deriving model errors using ranger package 'quantreg' option...", immediate. = TRUE)
+            pred.q = predict(object@quantregModel, as.data.frame(out.c), type="quantiles", quantiles=quantiles)
+            pred$model.error <- (pred.q$predictions[,2]-pred.q$predictions[,1])/2
+            pred@data[,"q.lwr"] <- pred.q$predictions[,1]
+            pred@data[,"q.upr"] <- pred.q$predictions[,2]
+          }
         } else {
           message("Deriving model errors using sd of sign. learners...", immediate. = TRUE)
           ## Linear Models: the absolute value of the t-statistic for each model parameter is used: https://topepo.github.io/caret/variable-importance.html
