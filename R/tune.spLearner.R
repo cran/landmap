@@ -41,7 +41,6 @@
 #' library(kernlab)
 #' library(ranger)
 #' library(glmnet)
-#' library(boot)
 #' library(raster)
 #' demo(meuse, echo=FALSE)
 #' ## Regression:
@@ -50,8 +49,8 @@
 #'       lambda=0, parallel=FALSE, SL.library=sl)
 #' summary(m@spModel$learner.model$super.model$learner.model)
 #' ## Optimize model:
-#' m0 <- tune.spLearner(m, xg.skip = TRUE, parallel=FALSE)
-#' summary(m0@spModel$learner.model$super.model$learner.model)
+#' t <- try( m0 <- tune.spLearner(m, xg.skip = TRUE, parallel=FALSE), silent=TRUE)
+#' if(!class(t) == "try-error") summary(m0@spModel$learner.model$super.model$learner.model)
 #' }
 setMethod("tune.spLearner", signature(object = "spLearner"), function(object, num.trees = 85, blocking, discrete_ps, rdesc = mlr::makeResampleDesc("CV", iters = 2L), inner = mlr::makeResampleDesc("Holdout"), maxit = 20, xg.model_Params, xg.skip = FALSE, parallel = "multicore", hzn_depth = FALSE, ...){
   if(all(c("regr.ranger", "regr.xgboost") %in% object@spModel$learner.model$super.model$features) & object@spModel$learner.model$super.model$learner$id=="regr.lm"){
@@ -87,7 +86,7 @@ setMethod("tune.spLearner", signature(object = "spLearner"), function(object, nu
     message("Running tuneParams for ranger... ", immediate. = TRUE)
     resR.lst = mlr::tuneParams(mlr::makeLearner("regr.ranger", num.threads = round(parallel::detectCores()/length(discrete_ps$pars$mtry$values)), num.trees=num.trees), task = tsk0, resampling = rdesc, par.set = discrete_ps, control = ctrl)
     ## Error: mtry can not be larger than number of variables in data.
-    if(resR.lst$x$mtry >= length(object@spModel$features)){
+    if(resR.lst$x$mtry >= (length(object@spModel$features)-1)){
       lrn.rf = mlr::makeLearner("regr.ranger", num.threads = parallel::detectCores(), num.trees=num.trees, importance="impurity")
     } else {
       lrn.rf = mlr::makeLearner("regr.ranger", num.threads = parallel::detectCores(), mtry=resR.lst$x$mtry, num.trees=num.trees, importance="impurity")

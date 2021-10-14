@@ -5,7 +5,7 @@
 #' @param formulaString Model formula,
 #' @param covariates SpatialPixelsDataFrame object,
 #' @param SL.library List of learners,
-#' @param family Family e.g. gaussian(),
+#' @param family Family e.g. \code{gaussian()},
 #' @param method Ensemble stacking method (see makeStackedLearner),
 #' @param predict.type Prediction type 'prob' or 'response',
 #' @param super.learner Ensemble stacking model usually \code{regr.lm},
@@ -115,7 +115,7 @@ train.spLearner.matrix <- function(observations, formulaString, covariates, SL.l
     if(missing(predict.type)){ predict.type = "response" }
     if(any(SL.library %in% "regr.xgboost")){
       ## https://github.com/dmlc/xgboost/issues/4599
-      lrns[[which(SL.library %in% "regr.xgboost")]] = mlr::makeLearner("regr.xgboost", par.vals = list(objective ='reg:squarederror'))
+      lrns[[which(SL.library %in% "regr.xgboost")]] <- mlr::makeLearner("regr.xgboost", par.vals = list(objective ='reg:squarederror'))
     }
     if(is.null(weights)){
       tsk <- mlr::makeRegrTask(data = observations.s, target = tv, coordinates = observations[which(r.sel),xyn], blocking = id[which(r.sel)])
@@ -198,32 +198,26 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' }
 #'
 #' @examples
-#' library(mlr)
 #' library(rgdal)
-#' library(geoR)
-#' library(plotKML)
-#' library(kernlab)
-#' library(ranger)
-#' library(glmnet)
-#' library(boot)
-#' library(raster)
-#' library(forestError)
+#' library(mlr)
+#' library(rpart)
+#' library(nnet)
 #' demo(meuse, echo=FALSE)
 #' ## Regression:
 #' sl = c("regr.rpart", "regr.nnet", "regr.glm")
-#' system.time( m <- train.spLearner(meuse["lead"], covariates=meuse.grid[,c("dist","ffreq")],
-#'       lambda=0, parallel=FALSE, SL.library=sl) )
+#' system.time( m <- train.spLearner(meuse["lead"],
+#'       covariates=meuse.grid[,c("dist","ffreq")],
+#'       oblique.coords = FALSE, lambda=0,
+#'       parallel=FALSE, SL.library=sl) )
 #' summary(m@spModel$learner.model$super.model$learner.model)
-#' \donttest{
+#' \dontrun{
+#' library(plotKML)
 #' ## regression-matrix:
 #' str(m@vgmModel$observations@data)
-#' meuse.y <- predict(m)
-#' plot(raster(meuse.y$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
+#' meuse.y <- predict(m, error.type="weighted.sd")
+#' plot(raster::raster(meuse.y$pred["response"]), col=plotKML::R_pal[["rainbow_75"]][4:20],
 #'    main="Predictions spLearner", axes=FALSE, box=FALSE)
 #'
-#' library(parallelMap)
-#' library(deepnet)
-#' library(xgboost)
 #' ## Regression with default settings:
 #' m <- train.spLearner(meuse["zinc"], covariates=meuse.grid[,c("dist","ffreq")],
 #'         parallel=FALSE, lambda = 0)
@@ -232,20 +226,20 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' meuse.y <- predict(m)
 #' ## Plot of predictions and prediction error (RMSPE)
 #' op <- par(mfrow=c(1,2), oma=c(0,0,0,1), mar=c(0,0,4,3))
-#' plot(raster(meuse.y$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
+#' plot(raster::raster(meuse.y$pred["response"]), col=plotKML::R_pal[["rainbow_75"]][4:20],
 #'    main="Predictions spLearner", axes=FALSE, box=FALSE)
 #' points(meuse, pch="+")
-#' plot(raster(meuse.y$pred["model.error"]), col=rev(bpy.colors()),
+#' plot(raster::raster(meuse.y$pred["model.error"]), col=rev(bpy.colors()),
 #'    main="Prediction errors", axes=FALSE, box=FALSE)
 #' points(meuse, pch="+")
 #' par(op)
-#' dev.off()
+#' while (!is.null(dev.list())) dev.off()
 #' ## Plot of prediction intervals:
 #' pts = list("sp.points", meuse, pch = "+", col="black")
-#' spplot(meuse.y$pred[,c("q.lwr","q.upr")], col.regions=R_pal[["rainbow_75"]][4:20],
+#' spplot(meuse.y$pred[,c("q.lwr","q.upr")], col.regions=plotKML::R_pal[["rainbow_75"]][4:20],
 #'    sp.layout = list(pts),
 #'    main="Prediction intervals (alpha = 0.318)")
-#' dev.off()
+#' while (!is.null(dev.list())) dev.off()
 #'
 #' ## Method from https://doi.org/10.3390/rs12101687
 #' #library(meteo)
@@ -254,14 +248,14 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' meuse.N <- predict(mN)
 #' ## Plot of predictions and prediction error (RMSPE)
 #' op <- par(mfrow=c(1,2), oma=c(0,0,0,1), mar=c(0,0,4,3))
-#' plot(raster(meuse.N$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
+#' plot(raster::raster(meuse.N$pred["response"]), col=plotKML::R_pal[["rainbow_75"]][4:20],
 #'    main="Predictions spLearner meteo::near.obs", axes=FALSE, box=FALSE)
 #' points(meuse, pch="+")
-#' plot(raster(meuse.N$pred["model.error"]), col=rev(bpy.colors()),
+#' plot(raster::raster(meuse.N$pred["model.error"]), col=rev(bpy.colors()),
 #'    main="Prediction errors", axes=FALSE, box=FALSE)
 #' points(meuse, pch="+")
 #' par(op)
-#' dev.off()
+#' while (!is.null(dev.list())) dev.off()
 #'
 #' ## Classification:
 #' SL.library <- c("classif.ranger", "classif.xgboost", "classif.nnTrain")
@@ -269,7 +263,7 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #'    SL.library = SL.library, super.learner = "classif.glmnet", parallel=FALSE)
 #' meuse.soil <- predict(mC)
 #' spplot(meuse.soil$pred[grep("prob.", names(meuse.soil$pred))],
-#'         col.regions=SAGA_pal[["SG_COLORS_YELLOW_RED"]], zlim=c(0,1))
+#'         col.regions=plotKML::SAGA_pal[["SG_COLORS_YELLOW_RED"]], zlim=c(0,1))
 #' spplot(meuse.soil$pred[grep("error.", names(meuse.soil$pred))],
 #'          col.regions=rev(bpy.colors()))
 #'
@@ -281,14 +275,14 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' summary(mR@spModel$learner.model$super.model$learner.model)
 #' rainfall1km <- predict(mR, what="mspe")
 #' op <- par(mfrow=c(1,2), oma=c(0,0,0,1), mar=c(0,0,4,3))
-#' plot(raster(rainfall1km$pred["response"]), col=R_pal[["rainbow_75"]][4:20],
+#' plot(raster::raster(rainfall1km$pred["response"]), col=plotKML::R_pal[["rainbow_75"]][4:20],
 #'     main="Predictions spLearner", axes=FALSE, box=FALSE)
 #' points(sic1997$daily.rainfall, pch="+")
-#' plot(raster(rainfall1km$pred["model.error"]), col=rev(bpy.colors()),
+#' plot(raster::raster(rainfall1km$pred["model.error"]), col=rev(bpy.colors()),
 #'     main="Prediction errors", axes=FALSE, box=FALSE)
 #' points(sic1997$daily.rainfall, pch="+")
 #' par(op)
-#' dev.off()
+#' while (!is.null(dev.list())) dev.off()
 #'
 #' ## Ebergotzen data set
 #' data(eberg_grid)
@@ -306,8 +300,8 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' mB <- train.spLearner(eberg["Parabraunerde"], covariates=X,
 #'    family=binomial(), cov.model = "nugget", parallel=FALSE)
 #' eberg.Parabraunerde <- predict(mB)
-#' plot(raster(eberg.Parabraunerde$pred["prob.1"]),
-#'    col=SAGA_pal[["SG_COLORS_YELLOW_RED"]], zlim=c(0,1))
+#' plot(raster::raster(eberg.Parabraunerde$pred["prob.1"]),
+#'    col=plotKML::SAGA_pal[["SG_COLORS_YELLOW_RED"]], zlim=c(0,1))
 #' points(eberg["Parabraunerde"], pch="+")
 #'
 #' ## Factor variable:
@@ -317,11 +311,11 @@ setMethod("train.spLearner", signature(observations = "data.frame", formulaStrin
 #' X <- eberg_grid[c("PRMGEO6","DEMSRT6","TWISRT6","TIRAST6")]
 #' mF <- train.spLearner(eberg["TAXGRSC"], covariates=X, parallel=FALSE)
 #' TAXGRSC <- predict(mF)
-#' plot(stack(TAXGRSC$pred[grep("prob.", names(TAXGRSC$pred))]),
-#'     col=SAGA_pal[["SG_COLORS_YELLOW_RED"]], zlim=c(0,1))
-#' plot(stack(TAXGRSC$pred[grep("error.", names(TAXGRSC$pred))]),
-#'     col=SAGA_pal[["SG_COLORS_YELLOW_BLUE"]], zlim=c(0,0.45))
-#' dev.off()
+#' plot(raster::stack(TAXGRSC$pred[grep("prob.", names(TAXGRSC$pred))]),
+#'     col=plotKML::SAGA_pal[["SG_COLORS_YELLOW_RED"]], zlim=c(0,1))
+#' plot(raster::stack(TAXGRSC$pred[grep("error.", names(TAXGRSC$pred))]),
+#'     col=plotKML::SAGA_pal[["SG_COLORS_YELLOW_BLUE"]], zlim=c(0,0.45))
+#' while (!is.null(dev.list())) dev.off()
 #' }
 #' @export
 #' @docType methods
@@ -489,7 +483,7 @@ model.data <- function(observations, formulaString, covariates, dimensions=c("2D
 #' @return Object of class \code{SpatialPixelsDataFrame} with predictions and model error.
 #' @method predict spLearner
 #' @export
-"predict.spLearner" <- function(object, predictionLocations, model.error=TRUE, error.type=c("forestError", "quantreg", "weighted.sd", "interval")[1], t.prob=1/3, w, quantiles = c((1-.682)/2, 1-(1-.682)/2), n.cores = parallel::detectCores(), what = c("mspe", "bias", "interval"), ...){
+"predict.spLearner" <- function(object, predictionLocations, model.error=TRUE, error.type=c("forestError", "weighted.sd", "quantreg", "interval")[1], t.prob=1/3, w, quantiles = c((1-.682)/2, 1-(1-.682)/2), n.cores = parallel::detectCores(), what = c("mspe", "bias", "interval"), ...){
   if(any(object@spModel$task.desc$type=="classif")){
     error.type <- "weighted.sd"
   }
@@ -532,39 +526,44 @@ model.data <- function(observations, formulaString, covariates, dimensions=c("2D
           pred.int = predict(object@spModel$learner.model$super.model$learner.model, newdata = data.frame(out.c), interval = "prediction", level=2/3)
           ## assumes normal distribution
           pred$model.error <- (pred.int[,"upr"]-pred.int[,"lwr"])/2
-        }
-        if((error.type=="quantreg" | error.type=="forestError") & object@spModel$learner.model$super.model$learner$id=="regr.lm"){
-          if(error.type=="forestError"){
-            message("Deriving model errors using forestError package...", immediate. = TRUE)
-            m.train = object@spModel$learner.model$super.model$learner.model$model
-            m.terms = all.vars(object@spModel$learner.model$super.model$learner.model$terms)
-            ## http://jmlr.org/papers/v22/18-558.html
-            pred.q = forestError::quantForestError(object@quantregModel, X.train=m.train[,m.terms[-1]], X.test=as.data.frame(out.c), Y.train=m.train[,m.terms[1]], what = what, alpha = (1-(quantiles[2]-quantiles[1])), n.cores = n.cores)
-            if(any(what %in% "mspe")){ pred$model.error <- sqrt(pred.q$mspe) }
-            if(any(what %in% "bias")){ pred$model.bias <- pred.q$bias }
-            if(any(what %in% "interval")){
-              pred@data[,"q.lwr"] <- pred.q[,grep("lower", names(pred.q))]
-              pred@data[,"q.upr"] <- pred.q[,grep("upper", names(pred.q))]
+        } else {
+          m.train = object@spModel$learner.model$super.model$learner.model$model
+          m.terms = all.vars(object@spModel$learner.model$super.model$learner.model$terms)
+          if((error.type=="quantreg" | error.type=="forestError") & object@spModel$learner.model$super.model$learner$id=="regr.lm"){
+            if(error.type=="forestError"){
+              message("Deriving model errors using forestError package...", immediate. = TRUE)
+              ## http://jmlr.org/papers/v22/18-558.html
+              pred.q = forestError::quantForestError(object@quantregModel, X.train=m.train[,m.terms[-1]], X.test=as.data.frame(out.c), Y.train=m.train[,m.terms[1]], what = what, alpha = (1-(quantiles[2]-quantiles[1])), n.cores = n.cores)
+              if(any(what %in% "mspe")){ pred$model.error <- sqrt(pred.q$mspe) }
+              if(any(what %in% "bias")){ pred$model.bias <- pred.q$bias }
+              if(any(what %in% "interval")){
+                pred@data[,"q.lwr"] <- pred.q[,grep("lower", names(pred.q))]
+                pred@data[,"q.upr"] <- pred.q[,grep("upper", names(pred.q))]
+              }
+            } else {
+              message("Deriving model errors using ranger package 'quantreg' option...", immediate. = TRUE)
+              pred.q = predict(object@quantregModel, as.data.frame(out.c), type="quantiles", quantiles=quantiles)
+              pred$model.error <- (pred.q$predictions[,2]-pred.q$predictions[,1])/2
+              pred@data[,"q.lwr"] <- pred.q$predictions[,1]
+              pred@data[,"q.upr"] <- pred.q$predictions[,2]
             }
           } else {
-            message("Deriving model errors using ranger package 'quantreg' option...", immediate. = TRUE)
-            pred.q = predict(object@quantregModel, as.data.frame(out.c), type="quantiles", quantiles=quantiles)
-            pred$model.error <- (pred.q$predictions[,2]-pred.q$predictions[,1])/2
-            pred@data[,"q.lwr"] <- pred.q$predictions[,1]
-            pred@data[,"q.upr"] <- pred.q$predictions[,2]
-          }
-        } else {
-          message("Deriving model errors using sd of sign. learners...", immediate. = TRUE)
-          ## Linear Models: the absolute value of the t-statistic for each model parameter is used: https://topepo.github.io/caret/variable-importance.html
-          ## If coefficient t-value probability >0.05 don't use to derive errors
-          ## This is an arbitrary decision
-          wt <- summary(object@spModel$learner.model$super.model$learner.model)$coefficients[-1,4]
-          wt <- which(wt<t.prob)
-          if(length(wt)>1){
-            pred$model.error <- matrixStats::rowSds(out.c[,wt], na.rm=TRUE)
-          } else {
-            warning("Number of significant learners <2. Try adding additional learners.")
-            pred$model.error <- NA
+            message("Deriving model errors using sd of sign. learners...", immediate. = TRUE)
+            ## Linear Models: the absolute value of the t-statistic for each model parameter is used: https://topepo.github.io/caret/variable-importance.html
+            ## If coefficient t-value probability >0.05 don't use to derive errors because it could inflate errors
+            ## This is an arbitrary decision
+            wt <- summary(object@spModel$learner.model$super.model$learner.model)$coefficients[-1,4]
+            wt <- which(wt<t.prob)
+            if(length(wt)>1){
+              ## correction factor:
+              eml.MSE0 = matrixStats::rowSds(as.matrix(m.train[,m.terms[-1]]), na.rm=TRUE)^2
+              eml.MSE = stats::deviance(object@spModel$learner.model$super.model$learner.model)/stats::df.residual(object@spModel$learner.model$super.model$learner.model)
+              eml.cf = eml.MSE/mean(eml.MSE0, na.rm = TRUE)
+              pred$model.error <- sqrt(matrixStats::rowSds(out.c[,wt], na.rm=TRUE)^2 * eml.cf)
+            } else {
+              warning("Number of significant learners <2. Try adding additional learners.")
+              pred$model.error <- NA
+            }
           }
         }
       }
